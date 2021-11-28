@@ -7,6 +7,9 @@
 using namespace std;
 using namespace cv;
 
+double min_text_fill = 0.4, max_text_fill = 0.8;
+int min_text_height = 8, min_text_width = 8;
+
 int main()
 {
   String filename = "./erundulki.jpg";
@@ -18,49 +21,47 @@ int main()
     return -1;
   }
   int thresh = 200;
-  Mat imgGray, imgTh, imgEr, imgTmp;
-  Mat canny_out, cannyEr;
+  Mat imgGray, imgTh;
+  Mat grad;
   Mat kernel_3x3 = getStructuringElement(MORPH_ELLIPSE, Size(3,3));
-  Mat kernel_5x5 = getStructuringElement(MORPH_RECT, Size(5,5));
+  Mat kernel_9x1 = getStructuringElement(MORPH_RECT, Size(9,1));
   cvtColor(image, imgGray, COLOR_BGR2GRAY);
 
-  threshold(imgGray, imgTh, thresh, 255, THRESH_BINARY);
-  // adaptiveThreshold(imgGray, imgTh, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 7, 21);
-  morphologyEx(imgTh, imgEr, MORPH_CLOSE, kernel_3x3);
-  // morphologyEx(imgTmp, imgEr, MORPH_OPEN, kernel_3x3);
+  morphologyEx(imgGray, grad, MORPH_GRADIENT, kernel_3x3);
+  threshold(grad, imgTh, 0, 255, THRESH_BINARY | THRESH_OTSU);
+  Mat connected;
+  morphologyEx(imgTh, connected, MORPH_CLOSE, kernel_9x1);
+  // morphologyEx(imgTh, imgEr, MORPH_CLOSE, kernel_3x3);
   
   // Canny(imgGray, canny_out, thresh, thresh*2);
   vector<vector<Point> > contours;
   vector<Vec4i> hierarchy;
   // findContours(canny_out, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
-  findContours(imgEr, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_NONE);
+  findContours(connected, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
   vector<Rect> boundRect(contours.size());
   // hierarchy: [Next, Previous, First_Child, Parent]
   cout << "contours found: " << contours.size() << endl;
-  Mat drawing = Mat::zeros(imgEr.size(), CV_8UC3);
+  Mat drawing = Mat::zeros(imgTh.size(), CV_8UC1);
   Scalar color = Scalar(255, 255, 255);
-  int count = 0;
-  for(int i=0; i < contours.size(); i++) {
-    drawContours(drawing, contours, i, color, 2, LINE_8, hierarchy, 0);
-    if(hierarchy[i][3] > -2) {
-      boundRect[i] = boundingRect(contours[i]);
-      rectangle(drawing, boundRect[i].tl(), boundRect[i].br(), color, 1);
+  for(int idx=0; idx >=0; idx = hierarchy[idx][0]) {
+    Rect rect = boundingRect(contours[idx]);
+    Mat maskROI(drawing, rect);
+    maskROI = Scalar(0, 0, 0);
+    drawContours(drawing, contours, idx, color, FILLED);
+    double r = static_cast<double>(countNonZero(maskROI))/(rect.width*rect.height);
+    cout << idx << ": r=" << r << endl;
+    if(
+      r > min_text_fill && r < max_text_fill &&
+      rect.height > min_text_height && rect.width > min_text_width
+      )
+    {
+      rectangle(image, rect, Scalar(0, 255, 0), 2);
     }
   }
-  cout << "first-level contours: " << count << endl;
   String wName;
   wName = "Ерундульки";
   namedWindow(wName);
   imshow(wName, image);
-  wName = "Ерундульки imgTh";
-  namedWindow(wName);
-  imshow(wName, imgTh);
-  wName = "Ерундульки imgEr";
-  namedWindow(wName);
-  imshow(wName, imgEr);
-  wName = "Ерундульки contours";
-  namedWindow(wName);
-  imshow(wName, drawing);
   waitKey(0);
   destroyAllWindows();
 
