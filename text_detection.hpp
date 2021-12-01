@@ -11,4 +11,4 @@ vector<Rect>& textCandidates(
   int min_text_width = 8
 );
 
-Mat &textContours(const Mat& image, double thresh = 200.0);
+Mat &textContours(const Mat& image, double thresh = 100.0, double m_thresh = 200.0);

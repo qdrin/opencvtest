@@ -29,9 +29,12 @@ int main()
     Mat part(image, rects[i]);
     Mat &contour = textContours(part);
     contour.copyTo(Mat(gray, rects[i]));
-    rectangle(gray, rects[i], Scalar(0, 255, 0), 1);
+    rectangle(image, rects[i], Scalar(0, 255, 0), 1);
   }
   String wName;
+  wName = "Ерундульки";
+  namedWindow(wName);
+  imshow(wName, image);
   wName = "Ерундульки_gray";
   namedWindow(wName);
   imshow(wName, gray);
