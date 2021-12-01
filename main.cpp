@@ -27,7 +27,7 @@ int main()
   for(int i=0; i < rects.size(); i++)
   {
     Mat part(image, rects[i]);
-    Mat &contour = textContours(part);
+    Mat &contour = textContours(part, 100.0, 200.0);
     contour.copyTo(Mat(gray, rects[i]));
     rectangle(image, rects[i], Scalar(0, 255, 0), 1);
   }

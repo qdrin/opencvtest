@@ -48,22 +48,21 @@ Mat &textContours(const Mat& image, double thresh, double m_thresh)
   Mat kernel_3x3 = getStructuringElement(MORPH_ELLIPSE, Size(3,3));
   Scalar color = Scalar(255, 255, 255), back = Scalar(0, 0, 0);
   cvtColor(image, gray, COLOR_BGR2GRAY);
-  // blur(gray, canny_out, Size(3, 3));
-  Canny(gray, canny_out, thresh, m_thresh, 3, true);
+  blur(gray, canny_out, Size(3, 3));
+  Canny(canny_out, canny_out, thresh, m_thresh, 3, true);
   threshold(gray, imgTh, m_thresh, 255, THRESH_BINARY);
   vector<vector<Point> > contours;
   vector<Vec4i> hierarchy;
-  findContours(canny_out, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
   // morphologyEx(canny_out, imgTmp, MORPH_CLOSE, kernel_3x3);
+  findContours(canny_out, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
   Mat drawing = Mat::zeros(gray.size(), CV_8UC1);
   for(int i=0; i < contours.size(); i++) {
-    // cout << i << ": " << hierarchy[i] << ", parent: " << hierarchy[i][3] << endl;
     if(hierarchy[i][3] == -1) {
-      cout << i << ": " << hierarchy[i] << " - up-level contour" << endl;
+      // cout << i << ": " << hierarchy[i] << " - up-level contour" << endl;
       drawContours(drawing, contours, i, color, FILLED);
       if((hole=hierarchy[i][2]) != -1) {
         for(int j=hierarchy[hole][2]; j != -1; j=hierarchy[j][0]) {
-          cout << j << ": second-level contour: " << hierarchy[j] << endl;
+          // cout << j << ": second-level contour: " << hierarchy[j] << endl;
           drawContours(drawing, contours, j, back, FILLED);
         }
       }
