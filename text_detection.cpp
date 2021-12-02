@@ -3,8 +3,9 @@
 using namespace cv;
 using namespace std;
 
-vector<Rect>& textCandidates(
+void textCandidates(
   Mat image,
+  vector<Rect> &res,
   double min_text_fill, double max_text_fill,
   int min_text_height, int min_text_width
   )
@@ -21,7 +22,6 @@ vector<Rect>& textCandidates(
   vector<vector<Point> > contours;
   vector<Vec4i> hierarchy;
   findContours(connected, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
-  vector<Rect> *result = new vector<Rect>;
   Mat drawing = Mat::zeros(imgTh.size(), CV_8UC1);
   Scalar color = Scalar(255, 255, 255);
   for(int idx=0; idx >=0; idx = hierarchy[idx][0]) {
@@ -35,13 +35,12 @@ vector<Rect>& textCandidates(
       rect.height > min_text_height && rect.width > min_text_width
       )
     {
-      result->insert(result->end(), rect);
+      res.insert(res.end(), rect);
     }
   }
-  return *result;
 }
 
-vector<Mat *> &textContours(const Mat& image, double thresh, double m_thresh)
+void textContours(const Mat& image, vector<Mat*> &res, double thresh, double m_thresh)
 {
   int hole;  // Номер элемента промежуточного слоя (между родителем и реальными потомками)
   Mat gray, canny_out, imgTmp;
@@ -57,7 +56,6 @@ vector<Mat *> &textContours(const Mat& image, double thresh, double m_thresh)
   findContours(canny_out, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
   Mat drawing = Mat::zeros(canny_out.size(), CV_8UC1);
   int count = 0;
-  vector<Mat*> *res = new vector<Mat *>;
   for(int i=0; i < contours.size(); i++) {
     if(hierarchy[i][3] == -1) {
       if(++count > 4) break;
@@ -72,9 +70,8 @@ vector<Mat *> &textContours(const Mat& image, double thresh, double m_thresh)
         }
       }
       // morphologyEx(d, d, MORPH_CLOSE, kernel_3x3);
-      res->insert(res->end(), d);
+      res.insert(res.end(), d);
       // d.copyTo(Mat(drawing, boundingRect(contours[i])));
     }
   }
-  return *res;
 }

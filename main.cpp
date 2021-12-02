@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <strstream>
 #include <string>
 using namespace std;
 using namespace cv;
@@ -15,7 +14,7 @@ int min_text_height = 8, min_text_width = 8;
 int main()
 {
   String filename = "./erundulki.jpg";
-  stringstream wName;
+  String wName;
   Mat image = imread(filename.c_str());
   Mat gray;
   cvtColor(image, gray, COLOR_RGB2GRAY);
@@ -26,27 +25,36 @@ int main()
     return -1;
   }
 
-  vector<Rect> &rects = textCandidates(image);
-  // Mat drawing;
+  vector<Rect> rects;
+  vector<Mat*> letters;
+  textCandidates(image, rects);
+  Mat res = Mat::zeros(gray.size(), CV_8UC1);
   for(int i=rects.size()-1; i < rects.size(); i++)
   {
     Mat part(image, rects[i]);
     Mat drawing = Mat::zeros(part.size(), CV_8UC1);
-    vector<Mat*> &letters = textContours(part, 100.0, 200.0);
+    textContours(part, letters, 100.0, 200.0);
     rectangle(image, rects[i], Scalar(0, 255, 0), 1);
+    Rect r;
+    r.x = rects[i].x;
+    r.y = rects[i].y;
+    r.width = 0;
+    r.height = 0;
     for(vector<Mat*>::iterator it=letters.begin(); it != letters.end(); it++) {
-      (*it)->copyTo(drawing);
+      r.width = (*it)->size().width;
+      r.height = (*it)->size().height;
+      (*it)->copyTo(Mat(res, r));
+      r.x = r.x + r.width;
+      r.y = r.y;
     }
-    wName.str("");
-    wName << "Ерундульки_" << i;
-    cout << "showing '" << wName.str() << "'\n";
-    namedWindow(wName.str());
-    imshow(wName.str(), drawing);
   }
 
-  wName << "Ерундульки";
-  namedWindow(wName.str());
-  imshow(wName.str(), image);
+  wName = "Ерундульки";
+  namedWindow(wName);
+  imshow(wName, image);
+  wName = "Ерундульки_drawing";
+  namedWindow(wName);
+  imshow(wName, res);
   waitKey(0);
   destroyAllWindows();
 
