@@ -32,20 +32,20 @@ int main()
   for(int i=rects.size()-1; i < rects.size(); i++)
   {
     Mat part(image, rects[i]);
-    Mat drawing = Mat::zeros(part.size(), CV_8UC1);
     textContours(part, letters, 100.0, 200.0);
     rectangle(image, rects[i], Scalar(0, 255, 0), 1);
     Rect r;
     r.x = rects[i].x;
     r.y = rects[i].y;
-    r.width = 0;
-    r.height = 0;
+    int num = 0;
     for(vector<Mat*>::iterator it=letters.begin(); it != letters.end(); it++) {
       r.width = (*it)->size().width;
       r.height = (*it)->size().height;
-      (*it)->copyTo(Mat(res, r));
-      r.x = r.x + r.width;
-      r.y = r.y;
+      wName = num++;
+      // namedWindow(wName);
+      // imshow(wName, **it);
+      (*it)->copyTo(Mat(res(r)));
+      r.x = r.x + r.width + 2;
     }
   }
 

@@ -4,74 +4,79 @@ using namespace cv;
 using namespace std;
 
 void textCandidates(
-  Mat image,
-  vector<Rect> &res,
-  double min_text_fill, double max_text_fill,
-  int min_text_height, int min_text_width
-  )
+    Mat image,
+    vector<Rect> &res,
+    double min_text_fill, double max_text_fill,
+    int min_text_height, int min_text_width)
 {
   Mat gray, grad, imgTh, connected;
-  Mat kernel_3x3 = getStructuringElement(MORPH_ELLIPSE, Size(3,3));
-  Mat kernel_9x1 = getStructuringElement(MORPH_RECT, Size(9,1));
+  Mat kernel_3x3 = getStructuringElement(MORPH_ELLIPSE, Size(3, 3));
+  Mat kernel_9x1 = getStructuringElement(MORPH_RECT, Size(9, 1));
   cvtColor(image, gray, COLOR_BGR2GRAY);
 
   morphologyEx(gray, grad, MORPH_GRADIENT, kernel_3x3);
   threshold(grad, imgTh, 0, 255, THRESH_BINARY | THRESH_OTSU);
   morphologyEx(imgTh, connected, MORPH_CLOSE, kernel_9x1);
-  
-  vector<vector<Point> > contours;
+
+  vector<vector<Point>> contours;
   vector<Vec4i> hierarchy;
   findContours(connected, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
   Mat drawing = Mat::zeros(imgTh.size(), CV_8UC1);
   Scalar color = Scalar(255, 255, 255);
-  for(int idx=0; idx >=0; idx = hierarchy[idx][0]) {
+  for (int idx = 0; idx >= 0; idx = hierarchy[idx][0])
+  {
     Rect rect = boundingRect(contours[idx]);
     Mat maskROI(drawing, rect);
     maskROI = Scalar(0, 0, 0);
     drawContours(drawing, contours, idx, color, FILLED);
-    double r = static_cast<double>(countNonZero(maskROI))/(rect.width*rect.height);
-    if(
-      r > min_text_fill && r < max_text_fill &&
-      rect.height > min_text_height && rect.width > min_text_width
-      )
+    double r = static_cast<double>(countNonZero(maskROI)) / (rect.width * rect.height);
+    if (
+        r > min_text_fill && r < max_text_fill &&
+        rect.height > min_text_height && rect.width > min_text_width)
     {
       res.insert(res.end(), rect);
     }
   }
 }
 
-void textContours(const Mat& image, vector<Mat*> &res, double thresh, double m_thresh)
+void textContours(const Mat &image, vector<Mat *> &res, double thresh, double m_thresh)
 {
-  int hole;  // Номер элемента промежуточного слоя (между родителем и реальными потомками)
+  int hole; // Номер элемента промежуточного слоя (между родителем и реальными потомками)
   Mat gray, canny_out, imgTmp;
-  Mat kernel_3x3 = getStructuringElement(MORPH_ELLIPSE, Size(3,3));
+  Mat kernel_3x3 = getStructuringElement(MORPH_ELLIPSE, Size(3, 3));
   Scalar color = Scalar(255, 255, 255), back = Scalar(0, 0, 0);
   cvtColor(image, gray, COLOR_BGR2GRAY);
   // GaussianBlur(gray, canny_out, Size(3, 3), 3);
   blur(gray, canny_out, Size(3, 3));
   Canny(canny_out, canny_out, thresh, m_thresh, 3, true);
-  vector<vector<Point> > contours;
+  vector<vector<Point>> contours;
   vector<Vec4i> hierarchy;
   // morphologyEx(canny_out, imgTmp, MORPH_CLOSE, kernel_3x3);
   findContours(canny_out, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
   Mat drawing = Mat::zeros(canny_out.size(), CV_8UC1);
-  int count = 0;
-  for(int i=0; i < contours.size(); i++) {
-    if(hierarchy[i][3] == -1) {
-      if(++count > 4) break;
+  Mat d, *cropped;
+  // Mat *tmp = new Mat;
+  // *tmp = Mat::zeros(gray.size(), CV_8UC1);
+  // gray.copyTo(*tmp);
+  for (int i = 0; i < contours.size(); i++)
+  {
+    if (hierarchy[i][3] == -1)
+    {
       Rect rect = boundingRect(contours[i]);
-      Mat *d = new Mat(Mat::zeros(rect.size(), CV_8UC1));
-      cout << i << ": " << hierarchy[i] << ", rect: " << rect << endl;
-      drawContours(*d, contours, i, color, FILLED);
-      if((hole=hierarchy[i][2]) != -1) {
-        for(int j=hierarchy[hole][2]; j != -1; j=hierarchy[j][0]) {
+      d = Mat::zeros(gray.size(), CV_8UC1);
+      // cout << i << ": " << hierarchy[i] << ", rect: " << rect << ", contour: " << contours[i].size() << endl;
+      drawContours(d, contours, i, color, FILLED);
+      if ((hole = hierarchy[i][2]) != -1)
+      {
+        for (int j = hierarchy[hole][2]; j != -1; j = hierarchy[j][0])
+        {
           // cout << j << ": second-level contour: " << hierarchy[j] << endl;
-          drawContours(*d, contours, j, back, FILLED);
+          drawContours(d, contours, j, back, FILLED);
         }
       }
-      // morphologyEx(d, d, MORPH_CLOSE, kernel_3x3);
-      res.insert(res.end(), d);
-      // d.copyTo(Mat(drawing, boundingRect(contours[i])));
+      cropped = new Mat;
+      d(rect).copyTo(*cropped);
+      res.insert(res.end(), cropped);
     }
   }
 }
