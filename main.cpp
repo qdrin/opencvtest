@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <strstream>
 #include <string>
 using namespace std;
 using namespace cv;
@@ -14,6 +15,7 @@ int min_text_height = 8, min_text_width = 8;
 int main()
 {
   String filename = "./erundulki.jpg";
+  stringstream wName;
   Mat image = imread(filename.c_str());
   Mat gray;
   cvtColor(image, gray, COLOR_RGB2GRAY);
@@ -23,21 +25,28 @@ int main()
     cin.get();
     return -1;
   }
+
   vector<Rect> &rects = textCandidates(image);
-  for(int i=0; i < rects.size(); i++)
+  // Mat drawing;
+  for(int i=rects.size()-1; i < rects.size(); i++)
   {
     Mat part(image, rects[i]);
-    Mat &contour = textContours(part, 100.0, 200.0);
-    contour.copyTo(Mat(gray, rects[i]));
+    Mat drawing = Mat::zeros(part.size(), CV_8UC1);
+    vector<Mat*> &letters = textContours(part, 100.0, 200.0);
     rectangle(image, rects[i], Scalar(0, 255, 0), 1);
+    for(vector<Mat*>::iterator it=letters.begin(); it != letters.end(); it++) {
+      (*it)->copyTo(drawing);
+    }
+    wName.str("");
+    wName << "Ерундульки_" << i;
+    cout << "showing '" << wName.str() << "'\n";
+    namedWindow(wName.str());
+    imshow(wName.str(), drawing);
   }
-  String wName;
-  wName = "Ерундульки";
-  namedWindow(wName);
-  imshow(wName, image);
-  wName = "Ерундульки_gray";
-  namedWindow(wName);
-  imshow(wName, gray);
+
+  wName << "Ерундульки";
+  namedWindow(wName.str());
+  imshow(wName.str(), image);
   waitKey(0);
   destroyAllWindows();
 

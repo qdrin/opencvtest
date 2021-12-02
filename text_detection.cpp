@@ -41,34 +41,40 @@ vector<Rect>& textCandidates(
   return *result;
 }
 
-Mat &textContours(const Mat& image, double thresh, double m_thresh)
+vector<Mat *> &textContours(const Mat& image, double thresh, double m_thresh)
 {
   int hole;  // Номер элемента промежуточного слоя (между родителем и реальными потомками)
-  Mat gray, imgTh, imgEr, sobel_out, canny_out, imgTmp;
+  Mat gray, canny_out, imgTmp;
   Mat kernel_3x3 = getStructuringElement(MORPH_ELLIPSE, Size(3,3));
   Scalar color = Scalar(255, 255, 255), back = Scalar(0, 0, 0);
   cvtColor(image, gray, COLOR_BGR2GRAY);
+  // GaussianBlur(gray, canny_out, Size(3, 3), 3);
   blur(gray, canny_out, Size(3, 3));
   Canny(canny_out, canny_out, thresh, m_thresh, 3, true);
-  threshold(gray, imgTh, m_thresh, 255, THRESH_BINARY);
   vector<vector<Point> > contours;
   vector<Vec4i> hierarchy;
   // morphologyEx(canny_out, imgTmp, MORPH_CLOSE, kernel_3x3);
   findContours(canny_out, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
-  Mat drawing = Mat::zeros(gray.size(), CV_8UC1);
+  Mat drawing = Mat::zeros(canny_out.size(), CV_8UC1);
+  int count = 0;
+  vector<Mat*> *res = new vector<Mat *>;
   for(int i=0; i < contours.size(); i++) {
     if(hierarchy[i][3] == -1) {
-      // cout << i << ": " << hierarchy[i] << " - up-level contour" << endl;
-      drawContours(drawing, contours, i, color, FILLED);
+      if(++count > 4) break;
+      Rect rect = boundingRect(contours[i]);
+      Mat *d = new Mat(Mat::zeros(rect.size(), CV_8UC1));
+      cout << i << ": " << hierarchy[i] << ", rect: " << rect << endl;
+      drawContours(*d, contours, i, color, FILLED);
       if((hole=hierarchy[i][2]) != -1) {
         for(int j=hierarchy[hole][2]; j != -1; j=hierarchy[j][0]) {
           // cout << j << ": second-level contour: " << hierarchy[j] << endl;
-          drawContours(drawing, contours, j, back, FILLED);
+          drawContours(*d, contours, j, back, FILLED);
         }
       }
+      // morphologyEx(d, d, MORPH_CLOSE, kernel_3x3);
+      res->insert(res->end(), d);
+      // d.copyTo(Mat(drawing, boundingRect(contours[i])));
     }
   }
-  Mat *res = new Mat();
-  drawing.copyTo(*res);
   return *res;
 }
