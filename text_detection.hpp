@@ -3,6 +3,11 @@
 using namespace cv;
 using namespace std;
 
+struct QLetter {
+  Mat *letter;
+  Rect rect;
+};
+
 void textCandidates(
   Mat image,
   vector<Rect> &res,

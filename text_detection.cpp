@@ -3,6 +3,12 @@
 using namespace cv;
 using namespace std;
 
+// Сортировка контуров слева направо
+bool leftOrder(const QLetter a, const QLetter b)
+{
+  return a.rect.x < b.rect.x;
+}
+
 void textCandidates(
     Mat image,
     vector<Rect> &res,
@@ -53,30 +59,33 @@ void textContours(const Mat &image, vector<Mat *> &res, double thresh, double m_
   vector<Vec4i> hierarchy;
   // morphologyEx(canny_out, imgTmp, MORPH_CLOSE, kernel_3x3);
   findContours(canny_out, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
+  // res.resize(contours.size());
+  vector<Rect> rects;
+  vector<QLetter> unsorted;
   Mat drawing = Mat::zeros(canny_out.size(), CV_8UC1);
   Mat d, *cropped;
-  // Mat *tmp = new Mat;
-  // *tmp = Mat::zeros(gray.size(), CV_8UC1);
-  // gray.copyTo(*tmp);
   for (int i = 0; i < contours.size(); i++)
   {
     if (hierarchy[i][3] == -1)
     {
       Rect rect = boundingRect(contours[i]);
       d = Mat::zeros(gray.size(), CV_8UC1);
-      // cout << i << ": " << hierarchy[i] << ", rect: " << rect << ", contour: " << contours[i].size() << endl;
       drawContours(d, contours, i, color, FILLED);
       if ((hole = hierarchy[i][2]) != -1)
       {
         for (int j = hierarchy[hole][2]; j != -1; j = hierarchy[j][0])
         {
-          // cout << j << ": second-level contour: " << hierarchy[j] << endl;
           drawContours(d, contours, j, back, FILLED);
         }
       }
-      cropped = new Mat;
-      d(rect).copyTo(*cropped);
-      res.insert(res.end(), cropped);
+      QLetter cropped;
+      cropped.letter = new Mat;
+      cropped.rect = rect;
+      d(rect).copyTo(*(cropped.letter));
+      unsorted.insert(unsorted.end(), cropped);
     }
   }
+  std::sort(unsorted.begin(), unsorted.end(), &leftOrder);
+  for(vector<QLetter>::iterator i=unsorted.begin(); i != unsorted.end(); i++)
+    res.insert(res.end(), i->letter); 
 }
