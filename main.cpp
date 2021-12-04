@@ -29,23 +29,24 @@ int main()
   vector<Mat*> letters;
   textCandidates(image, rects);
   Mat res = Mat::zeros(gray.size(), CV_8UC1);
-  for(int i=rects.size()-1; i < rects.size(); i++)
+  cout << "word candidates found: " << rects.size() << endl;
+  for(int i=0; i < rects.size(); i++)
   {
-    Mat part(image, rects[i]);
+    Mat part = image(rects[i]);
+    letters.clear();
     textContours(part, letters, 100.0, 200.0);
-    rectangle(image, rects[i], Scalar(0, 255, 0), 1);
     Rect r;
     r.x = rects[i].x;
     r.y = rects[i].y;
     int num = 0;
-    for(vector<Mat*>::iterator it=letters.begin(); it != letters.end(); it++) {
-      r.width = (*it)->size().width;
-      r.height = (*it)->size().height;
-      wName = num++;
-      // namedWindow(wName);
-      // imshow(wName, **it);
-      (*it)->copyTo(Mat(res(r)));
-      r.x = r.x + r.width + 2;
+    cout << i << ": " << letters.size() << " letters. Processing\n"; 
+    rectangle(image, rects[i], Scalar(0, 255, 0), 1);
+    for(vector<Mat*>::iterator j=letters.begin(); j != letters.end(); j++) {
+      Mat *it = *j;
+      r.width = it->size().width;
+      r.height = it->size().height;
+      it->copyTo(Mat(res(r)));
+      r.x = r.x + r.width;
     }
   }
 
